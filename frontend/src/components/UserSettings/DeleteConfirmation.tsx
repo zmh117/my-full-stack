@@ -7,11 +7,11 @@ import {
   AlertDialogOverlay,
   Button,
 } from "@chakra-ui/react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import React from "react"
 import { useForm } from "react-hook-form"
-import { useMutation, useQueryClient } from "react-query"
 
-import { type ApiError, type UserOut, UsersService } from "../../client"
+import { type ApiError, type UserPublic, UsersService } from "../../client"
 import useAuth from "../../hooks/useAuth"
 import useCustomToast from "../../hooks/useCustomToast"
 
@@ -28,14 +28,11 @@ const DeleteConfirmation = ({ isOpen, onClose }: DeleteProps) => {
     handleSubmit,
     formState: { isSubmitting },
   } = useForm()
-  const currentUser = queryClient.getQueryData<UserOut>("currentUser")
+  const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
   const { logout } = useAuth()
 
-  const deleteCurrentUser = async (id: number) => {
-    await UsersService.deleteUser({ userId: id })
-  }
-
-  const mutation = useMutation(deleteCurrentUser, {
+  const mutation = useMutation({
+    mutationFn: (id: number) => UsersService.deleteUser({ userId: id }),
     onSuccess: () => {
       showToast(
         "Success",
@@ -46,11 +43,11 @@ const DeleteConfirmation = ({ isOpen, onClose }: DeleteProps) => {
       onClose()
     },
     onError: (err: ApiError) => {
-      const errDetail = err.body?.detail
+      const errDetail = (err.body as any)?.detail
       showToast("Something went wrong.", `${errDetail}`, "error")
     },
     onSettled: () => {
-      queryClient.invalidateQueries("currentUser")
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] })
     },
   })
 

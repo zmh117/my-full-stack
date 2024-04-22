@@ -11,13 +11,13 @@ import {
   Text,
   useColorModeValue,
 } from "@chakra-ui/react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { type SubmitHandler, useForm } from "react-hook-form"
-import { useMutation, useQueryClient } from "react-query"
 
 import {
   type ApiError,
-  type UserOut,
+  type UserPublic,
   type UserUpdateMe,
   UsersService,
 } from "../../client"
@@ -27,7 +27,7 @@ import { emailPattern } from "../../utils"
 
 const UserInformation = () => {
   const queryClient = useQueryClient()
-  const color = useColorModeValue("inherit", "ui.white")
+  const color = useColorModeValue("inherit", "ui.light")
   const showToast = useCustomToast()
   const [editMode, setEditMode] = useState(false)
   const { user: currentUser } = useAuth()
@@ -37,7 +37,7 @@ const UserInformation = () => {
     reset,
     getValues,
     formState: { isSubmitting, errors, isDirty },
-  } = useForm<UserOut>({
+  } = useForm<UserPublic>({
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
@@ -50,21 +50,20 @@ const UserInformation = () => {
     setEditMode(!editMode)
   }
 
-  const updateInfo = async (data: UserUpdateMe) => {
-    await UsersService.updateUserMe({ requestBody: data })
-  }
-
-  const mutation = useMutation(updateInfo, {
+  const mutation = useMutation({
+    mutationFn: (data: UserUpdateMe) =>
+      UsersService.updateUserMe({ requestBody: data }),
     onSuccess: () => {
       showToast("Success!", "User updated successfully.", "success")
     },
     onError: (err: ApiError) => {
-      const errDetail = err.body?.detail
+      const errDetail = (err.body as any)?.detail
       showToast("Something went wrong.", `${errDetail}`, "error")
     },
     onSettled: () => {
-      queryClient.invalidateQueries("users")
-      queryClient.invalidateQueries("currentUser")
+      // TODO: can we do just one call now?
+      queryClient.invalidateQueries({ queryKey: ["users"] })
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] })
     },
   })
 
@@ -99,7 +98,7 @@ const UserInformation = () => {
               <Text
                 size="md"
                 py={2}
-                color={!currentUser?.full_name ? "gray.400" : "inherit"}
+                color={!currentUser?.full_name ? "ui.dim" : "inherit"}
               >
                 {currentUser?.full_name || "N/A"}
               </Text>

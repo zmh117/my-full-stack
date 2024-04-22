@@ -34,9 +34,11 @@ def test_get_users_normal_user_me(
 def test_create_user_new_email(
     client: TestClient, superuser_token_headers: dict[str, str], db: Session
 ) -> None:
-    with patch("app.utils.send_email", return_value=None), patch(
-        "app.core.config.settings.SMTP_HOST", "smtp.example.com"
-    ), patch("app.core.config.settings.SMTP_USER", "admin@example.com"):
+    with (
+        patch("app.utils.send_email", return_value=None),
+        patch("app.core.config.settings.SMTP_HOST", "smtp.example.com"),
+        patch("app.core.config.settings.SMTP_USER", "admin@example.com"),
+    ):
         username = random_email()
         password = random_lower_string()
         data = {"email": username, "password": password}
@@ -99,7 +101,7 @@ def test_get_existing_user_current_user(client: TestClient, db: Session) -> None
 
 
 def test_get_existing_user_permissions_error(
-    client: TestClient, normal_user_token_headers: dict[str, str], db: Session
+    client: TestClient, normal_user_token_headers: dict[str, str]
 ) -> None:
     r = client.get(
         f"{settings.API_V1_STR}/users/999999",
@@ -165,7 +167,7 @@ def test_retrieve_users(
 
 
 def test_update_user_me(
-    client: TestClient, normal_user_token_headers: dict[str, str], db: Session
+    client: TestClient, normal_user_token_headers: dict[str, str]
 ) -> None:
     full_name = "Updated Name"
     email = random_email()
@@ -182,7 +184,7 @@ def test_update_user_me(
 
 
 def test_update_password_me(
-    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+    client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
     new_password = random_lower_string()
     data = {
@@ -212,7 +214,7 @@ def test_update_password_me(
 
 
 def test_update_password_me_incorrect_password(
-    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+    client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
     new_password = random_lower_string()
     data = {"current_password": new_password, "new_password": new_password}
@@ -245,7 +247,7 @@ def test_update_user_me_email_exists(
 
 
 def test_update_password_me_same_password_error(
-    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+    client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
     data = {
         "current_password": settings.FIRST_SUPERUSER_PASSWORD,
@@ -263,14 +265,14 @@ def test_update_password_me_same_password_error(
     )
 
 
-def test_create_user_open(client: TestClient) -> None:
+def test_register_user(client: TestClient) -> None:
     with patch("app.core.config.settings.USERS_OPEN_REGISTRATION", True):
         username = random_email()
         password = random_lower_string()
         full_name = random_lower_string()
         data = {"email": username, "password": password, "full_name": full_name}
         r = client.post(
-            f"{settings.API_V1_STR}/users/open",
+            f"{settings.API_V1_STR}/users/signup",
             json=data,
         )
         assert r.status_code == 200
@@ -279,14 +281,14 @@ def test_create_user_open(client: TestClient) -> None:
         assert created_user["full_name"] == full_name
 
 
-def test_create_user_open_forbidden_error(client: TestClient) -> None:
+def test_register_user_forbidden_error(client: TestClient) -> None:
     with patch("app.core.config.settings.USERS_OPEN_REGISTRATION", False):
         username = random_email()
         password = random_lower_string()
         full_name = random_lower_string()
         data = {"email": username, "password": password, "full_name": full_name}
         r = client.post(
-            f"{settings.API_V1_STR}/users/open",
+            f"{settings.API_V1_STR}/users/signup",
             json=data,
         )
         assert r.status_code == 403
@@ -295,7 +297,7 @@ def test_create_user_open_forbidden_error(client: TestClient) -> None:
         )
 
 
-def test_create_user_open_already_exists_error(client: TestClient) -> None:
+def test_register_user_already_exists_error(client: TestClient) -> None:
     with patch("app.core.config.settings.USERS_OPEN_REGISTRATION", True):
         password = random_lower_string()
         full_name = random_lower_string()
@@ -305,7 +307,7 @@ def test_create_user_open_already_exists_error(client: TestClient) -> None:
             "full_name": full_name,
         }
         r = client.post(
-            f"{settings.API_V1_STR}/users/open",
+            f"{settings.API_V1_STR}/users/signup",
             json=data,
         )
         assert r.status_code == 400
@@ -335,7 +337,7 @@ def test_update_user(
 
 
 def test_update_user_not_exists(
-    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+    client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
     data = {"full_name": "Updated_full_name"}
     r = client.patch(
@@ -413,7 +415,7 @@ def test_delete_user_current_user(client: TestClient, db: Session) -> None:
 
 
 def test_delete_user_not_found(
-    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+    client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
     r = client.delete(
         f"{settings.API_V1_STR}/users/99999999",

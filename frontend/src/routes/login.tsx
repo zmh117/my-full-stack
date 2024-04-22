@@ -18,12 +18,10 @@ import {
   createFileRoute,
   redirect,
 } from "@tanstack/react-router"
-import React from "react"
 import { type SubmitHandler, useForm } from "react-hook-form"
 
 import Logo from "../assets/images/fastapi-logo.svg"
-import type { ApiError } from "../client"
-import type { Body_login_login_access_token as AccessToken } from "../client/models/Body_login_login_access_token"
+import type { Body_login_login_access_token as AccessToken } from "../client"
 import useAuth, { isLoggedIn } from "../hooks/useAuth"
 import { emailPattern } from "../utils"
 
@@ -40,8 +38,7 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   const [show, setShow] = useBoolean()
-  const { login } = useAuth()
-  const [error, setError] = React.useState<string | null>(null)
+  const { loginMutation, error, resetError } = useAuth()
   const {
     register,
     handleSubmit,
@@ -56,11 +53,14 @@ function Login() {
   })
 
   const onSubmit: SubmitHandler<AccessToken> = async (data) => {
+    if (isSubmitting) return
+
+    resetError()
+
     try {
-      await login(data)
-    } catch (err) {
-      const errDetail = (err as ApiError).body.detail
-      setError(errDetail)
+      await loginMutation.mutateAsync(data)
+    } catch {
+      // error is handled by useAuth hook
     }
   }
 
@@ -92,6 +92,7 @@ function Login() {
             })}
             placeholder="Email"
             type="email"
+            required
           />
           {errors.username && (
             <FormErrorMessage>{errors.username.message}</FormErrorMessage>
@@ -103,9 +104,10 @@ function Login() {
               {...register("password")}
               type={show ? "text" : "password"}
               placeholder="Password"
+              required
             />
             <InputRightElement
-              color="gray.400"
+              color="ui.dim"
               _hover={{
                 cursor: "pointer",
               }}
@@ -132,5 +134,3 @@ function Login() {
     </>
   )
 }
-
-export default Login

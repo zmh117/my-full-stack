@@ -14,12 +14,12 @@ import {
   ModalHeader,
   ModalOverlay,
 } from "@chakra-ui/react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { type SubmitHandler, useForm } from "react-hook-form"
-import { useMutation, useQueryClient } from "react-query"
 
 import {
   type ApiError,
-  type UserOut,
+  type UserPublic,
   type UserUpdate,
   UsersService,
 } from "../../client"
@@ -27,7 +27,7 @@ import useCustomToast from "../../hooks/useCustomToast"
 import { emailPattern } from "../../utils"
 
 interface EditUserProps {
-  user: UserOut
+  user: UserPublic
   isOpen: boolean
   onClose: () => void
 }
@@ -52,21 +52,19 @@ const EditUser = ({ user, isOpen, onClose }: EditUserProps) => {
     defaultValues: user,
   })
 
-  const updateUser = async (data: UserUpdateForm) => {
-    await UsersService.updateUser({ userId: user.id, requestBody: data })
-  }
-
-  const mutation = useMutation(updateUser, {
+  const mutation = useMutation({
+    mutationFn: (data: UserUpdateForm) =>
+      UsersService.updateUser({ userId: user.id, requestBody: data }),
     onSuccess: () => {
       showToast("Success!", "User updated successfully.", "success")
       onClose()
     },
     onError: (err: ApiError) => {
-      const errDetail = err.body?.detail
+      const errDetail = (err.body as any)?.detail
       showToast("Something went wrong.", `${errDetail}`, "error")
     },
     onSettled: () => {
-      queryClient.invalidateQueries("users")
+      queryClient.invalidateQueries({ queryKey: ["users"] })
     },
   })
 

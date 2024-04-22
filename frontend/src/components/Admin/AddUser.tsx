@@ -14,8 +14,8 @@ import {
   ModalHeader,
   ModalOverlay,
 } from "@chakra-ui/react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { type SubmitHandler, useForm } from "react-hook-form"
-import { useMutation, useQueryClient } from "react-query"
 
 import { type UserCreate, UsersService } from "../../client"
 import type { ApiError } from "../../client/core/ApiError"
@@ -53,22 +53,20 @@ const AddUser = ({ isOpen, onClose }: AddUserProps) => {
     },
   })
 
-  const addUser = async (data: UserCreate) => {
-    await UsersService.createUser({ requestBody: data })
-  }
-
-  const mutation = useMutation(addUser, {
+  const mutation = useMutation({
+    mutationFn: (data: UserCreate) =>
+      UsersService.createUser({ requestBody: data }),
     onSuccess: () => {
       showToast("Success!", "User created successfully.", "success")
       reset()
       onClose()
     },
     onError: (err: ApiError) => {
-      const errDetail = err.body?.detail
+      const errDetail = (err.body as any)?.detail
       showToast("Something went wrong.", `${errDetail}`, "error")
     },
     onSettled: () => {
-      queryClient.invalidateQueries("users")
+      queryClient.invalidateQueries({ queryKey: ["users"] })
     },
   })
 
